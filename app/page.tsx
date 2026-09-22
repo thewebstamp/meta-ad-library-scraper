@@ -7,10 +7,17 @@ type Business = {
   facebookUrl: string;
 };
 
+type ScrapeProgress = {
+  found: number;
+  target: number;
+  scrollRound: number;
+};
+
 export default function Home() {
   const [url, setUrl] = useState('');
   const [targetCount, setTargetCount] = useState('1000');
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [progress, setProgress] = useState<ScrapeProgress | null>(null);
   const [isScraping, setIsScraping] = useState(false);
   const [error, setError] = useState('');
   const [completed, setCompleted] = useState(false);
@@ -18,6 +25,7 @@ export default function Home() {
   async function handleScrape() {
     setError('');
     setBusinesses([]);
+    setProgress(null);
     setCompleted(false);
     setIsScraping(true);
 
@@ -33,16 +41,89 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
 
-      if (!response.ok || !data.success) {
         throw new Error(
-          data.error || 'Something went wrong while scraping.'
+          data?.error || 'Something went wrong while scraping.'
         );
       }
 
-      setBusinesses(data.businesses);
-      setCompleted(true);
+      if (!response.body) {
+        throw new Error('The scraper did not return a readable response.');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, {
+          stream: true,
+        });
+
+        const events = buffer.split('\n\n');
+
+        buffer = events.pop() || '';
+
+        for (const eventBlock of events) {
+          const lines = eventBlock.split('\n');
+
+          let eventName = '';
+          let eventData = '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              eventName = line.slice(7);
+            }
+
+            if (line.startsWith('data: ')) {
+              eventData = line.slice(6);
+            }
+          }
+
+          if (!eventName || !eventData) {
+            continue;
+          }
+
+          const data = JSON.parse(eventData);
+
+          if (eventName === 'started') {
+            setProgress({
+              found: 0,
+              target: data.target,
+              scrollRound: 0,
+            });
+          }
+
+          if (eventName === 'progress') {
+            setProgress(data);
+          }
+
+          if (eventName === 'completed') {
+            setBusinesses(data.businesses);
+            setProgress({
+              found: data.count,
+              target: Number(targetCount),
+              scrollRound: progress?.scrollRound || 0,
+            });
+            setCompleted(true);
+          }
+
+          if (eventName === 'error') {
+            throw new Error(
+              data.error || 'Something went wrong while scraping.'
+            );
+          }
+        }
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -66,10 +147,7 @@ export default function Home() {
       business.facebookUrl,
     ]);
 
-    const csv = [
-      headers,
-      ...rows,
-    ]
+    const csv = [headers, ...rows]
       .map((row) =>
         row
           .map((value) => `"${String(value).replace(/"/g, '""')}"`)
@@ -81,10 +159,10 @@ export default function Home() {
       type: 'text/csv;charset=utf-8;',
     });
 
-    const url = URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
-    link.href = url;
+    link.href = downloadUrl;
     link.download = `meta-ad-library-businesses-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
@@ -93,8 +171,16 @@ export default function Home() {
     link.click();
     link.remove();
 
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(downloadUrl);
   }
+
+  const percentage =
+    progress && progress.target > 0
+      ? Math.min(
+        100,
+        Math.round((progress.found / progress.target) * 100)
+      )
+      : 0;
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -109,8 +195,9 @@ export default function Home() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-slate-400">
-            Paste a Meta Ad Library search URL, choose how many unique
-            businesses you want, and collect their Facebook pages.
+            Paste a Meta Ad Library search URL, choose how many
+            unique businesses you want, and collect their Facebook
+            pages.
           </p>
         </div>
 
@@ -128,7 +215,9 @@ export default function Home() {
                 id="meta-url"
                 type="url"
                 value={url}
-                onChange={(event) => setUrl(event.target.value)}
+                onChange={(event) =>
+                  setUrl(event.target.value)
+                }
                 placeholder="https://www.facebook.com/ads/library/?..."
                 disabled={isScraping}
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-slate-500"
@@ -148,7 +237,9 @@ export default function Home() {
                 type="number"
                 min="1"
                 value={targetCount}
-                onChange={(event) => setTargetCount(event.target.value)}
+                onChange={(event) =>
+                  setTargetCount(event.target.value)
+                }
                 disabled={isScraping}
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-slate-500"
               />
@@ -164,16 +255,62 @@ export default function Home() {
             </button>
           </div>
 
-          {isScraping && (
+          {isScraping && progress && (
+            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 px-5 py-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium">
+                    Scraping in progress...
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Collecting unique Facebook pages from
+                    Meta Ad Library.
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-2xl font-bold">
+                    {progress.found.toLocaleString()}
+                  </p>
+
+                  <p className="text-sm text-slate-500">
+                    of {progress.target.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-white transition-all duration-300"
+                  style={{
+                    width: `${percentage}%`,
+                  }}
+                />
+              </div>
+
+              <div className="mt-3 flex justify-between text-sm text-slate-500">
+                <span>{percentage}% complete</span>
+                <span>
+                  Scroll round {progress.scrollRound}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {isScraping && !progress && (
             <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 px-4 py-4">
               <div className="flex items-center gap-3">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-white" />
 
                 <div>
-                  <p className="font-medium">Scraping in progress...</p>
+                  <p className="font-medium">
+                    Starting scraper...
+                  </p>
+
                   <p className="text-sm text-slate-500">
-                    The browser is collecting unique Facebook pages from Meta
-                    Ad Library.
+                    Opening Meta Ad Library and loading
+                    results.
                   </p>
                 </div>
               </div>
@@ -196,7 +333,8 @@ export default function Home() {
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold">
-                  {businesses.length.toLocaleString()} unique businesses found
+                  {businesses.length.toLocaleString()} unique
+                  businesses found
                 </h2>
               </div>
 
@@ -214,10 +352,13 @@ export default function Home() {
         {businesses.length > 0 && (
           <section className="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
             <div className="border-b border-slate-800 px-6 py-5">
-              <h2 className="text-xl font-semibold">Scraped Businesses</h2>
+              <h2 className="text-xl font-semibold">
+                Scraped Businesses
+              </h2>
+
               <p className="mt-1 text-sm text-slate-500">
-                Showing {businesses.length.toLocaleString()} unique Facebook
-                pages.
+                Showing {businesses.length.toLocaleString()}{' '}
+                unique Facebook pages.
               </p>
             </div>
 
@@ -228,9 +369,11 @@ export default function Home() {
                     <th className="px-6 py-4 text-sm font-medium text-slate-400">
                       #
                     </th>
+
                     <th className="px-6 py-4 text-sm font-medium text-slate-400">
                       Business Name
                     </th>
+
                     <th className="px-6 py-4 text-sm font-medium text-slate-400">
                       Facebook Page
                     </th>
@@ -253,7 +396,9 @@ export default function Home() {
 
                       <td className="px-6 py-4">
                         <a
-                          href={business.facebookUrl}
+                          href={
+                            business.facebookUrl
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-slate-400 underline decoration-slate-700 underline-offset-4 hover:text-white"
