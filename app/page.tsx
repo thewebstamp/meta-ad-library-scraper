@@ -1,6 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import { Source_Serif_4, Inter } from 'next/font/google';
+
+const serif = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  variable: '--font-serif',
+});
+
+const sans = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-sans',
+});
 
 type Business = {
   name: string;
@@ -183,30 +196,48 @@ export default function Home() {
       : 0;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-10">
-          <div className="mb-4 inline-flex rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-300">
-            Meta Ad Library Scraper
-          </div>
+    <main
+      className={`${serif.variable} ${sans.variable} min-h-screen`}
+      style={{
+        backgroundColor: '#0B0D10',
+        color: '#EDEEF0',
+        fontFamily: 'var(--font-sans)',
+      }}
+    >
+      <div className="mx-auto max-w-[960px] px-8 py-16">
 
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Find Businesses Running Ads
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-slate-400">
-            Paste a Meta Ad Library search URL, choose how many
-            unique businesses you want, and collect their Facebook
-            pages.
+        {/* Header */}
+        <header className="mb-14 border-b pb-10" style={{ borderColor: '#1E2328' }}>
+          <p
+            className="mb-3 text-[13px] tracking-wide"
+            style={{ color: '#8A9099' }}
+          >
+            Ad library research
           </p>
-        </div>
+          <h1
+            className="text-[40px] leading-[1.15] sm:text-[48px]"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: '#F5F5F3' }}
+          >
+            Find every business behind a Meta ad search
+          </h1>
+          <p className="mt-5 max-w-[62ch] text-[16px] leading-[1.7]" style={{ color: '#9BA1AA' }}>
+            Paste a search from the Meta Ad Library, set how many unique
+            advertisers you need, and this collects their business name and
+            Facebook page as it scrolls through the results.
+          </p>
+        </header>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-          <div className="grid gap-6 lg:grid-cols-[1fr_220px_auto] lg:items-end">
+        {/* Console panel */}
+        <section
+          className="rounded-md border p-8"
+          style={{ borderColor: '#1E2328', backgroundColor: '#111418' }}
+        >
+          <div className="grid gap-6 lg:grid-cols-[1fr_180px_auto] lg:items-end">
             <div>
               <label
                 htmlFor="meta-url"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-[13px] font-medium"
+                style={{ color: '#9BA1AA' }}
               >
                 Meta Ad Library URL
               </label>
@@ -215,21 +246,27 @@ export default function Home() {
                 id="meta-url"
                 type="url"
                 value={url}
-                onChange={(event) =>
-                  setUrl(event.target.value)
-                }
+                onChange={(event) => setUrl(event.target.value)}
                 placeholder="https://www.facebook.com/ads/library/?..."
                 disabled={isScraping}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-slate-500"
+                className="w-full rounded border px-4 py-3 text-[15px] outline-none transition disabled:opacity-50"
+                style={{
+                  borderColor: '#2A3038',
+                  backgroundColor: '#0B0D10',
+                  color: '#EDEEF0',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#C7A566')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#2A3038')}
               />
             </div>
 
             <div>
               <label
                 htmlFor="target-count"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-[13px] font-medium"
+                style={{ color: '#9BA1AA' }}
               >
-                Businesses to scrape
+                Target count
               </label>
 
               <input
@@ -237,11 +274,17 @@ export default function Home() {
                 type="number"
                 min="1"
                 value={targetCount}
-                onChange={(event) =>
-                  setTargetCount(event.target.value)
-                }
+                onChange={(event) => setTargetCount(event.target.value)}
                 disabled={isScraping}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-slate-500"
+                className="w-full rounded border px-4 py-3 text-[15px] outline-none transition disabled:opacity-50"
+                style={{
+                  borderColor: '#2A3038',
+                  backgroundColor: '#0B0D10',
+                  color: '#EDEEF0',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#C7A566')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#2A3038')}
               />
             </div>
 
@@ -249,133 +292,134 @@ export default function Home() {
               type="button"
               onClick={handleScrape}
               disabled={isScraping || !url.trim()}
-              className="rounded-xl bg-white px-7 py-3 font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded px-7 py-3 text-[15px] font-medium transition disabled:cursor-not-allowed disabled:opacity-30"
+              style={{ backgroundColor: '#C7A566', color: '#1A1500' }}
             >
-              {isScraping ? 'Scraping...' : 'Start Scraping'}
+              {isScraping ? 'Scraping' : 'Start scraping'}
             </button>
           </div>
 
           {isScraping && progress && (
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 px-5 py-5">
-              <div className="mb-4 flex items-center justify-between gap-4">
+            <div
+              className="mt-8 border-t pt-7"
+              style={{ borderColor: '#1E2328' }}
+            >
+              <div className="mb-4 flex items-baseline justify-between gap-4">
                 <div>
-                  <p className="font-medium">
-                    Scraping in progress...
+                  <p className="text-[15px]" style={{ color: '#EDEEF0' }}>
+                    Collecting unique advertisers
                   </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Collecting unique Facebook pages from
-                    Meta Ad Library.
+                  <p className="mt-1 text-[13px]" style={{ color: '#6E747C' }}>
+                    Scroll round {progress.scrollRound.toLocaleString()}
                   </p>
                 </div>
 
-                <div className="text-right">
-                  <p className="text-2xl font-bold">
-                    {progress.found.toLocaleString()}
-                  </p>
-
-                  <p className="text-sm text-slate-500">
-                    of {progress.target.toLocaleString()}
-                  </p>
+                <div
+                  className="text-right text-[26px]"
+                  style={{ fontVariantNumeric: 'tabular-nums', color: '#F5F5F3' }}
+                >
+                  {progress.found.toLocaleString()}
+                  <span className="text-[15px]" style={{ color: '#6E747C' }}>
+                    {' '}
+                    / {progress.target.toLocaleString()}
+                  </span>
                 </div>
               </div>
 
-              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+              <div className="h-[3px] w-full overflow-hidden rounded-full" style={{ backgroundColor: '#1E2328' }}>
                 <div
-                  className="h-full rounded-full bg-white transition-all duration-300"
-                  style={{
-                    width: `${percentage}%`,
-                  }}
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${percentage}%`, backgroundColor: '#C7A566' }}
                 />
               </div>
 
-              <div className="mt-3 flex justify-between text-sm text-slate-500">
-                <span>{percentage}% complete</span>
-                <span>
-                  Scroll round {progress.scrollRound}
-                </span>
+              <div className="mt-2 text-right text-[13px]" style={{ color: '#6E747C' }}>
+                {percentage}%
               </div>
             </div>
           )}
 
           {isScraping && !progress && (
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-white" />
-
-                <div>
-                  <p className="font-medium">
-                    Starting scraper...
-                  </p>
-
-                  <p className="text-sm text-slate-500">
-                    Opening Meta Ad Library and loading
-                    results.
-                  </p>
-                </div>
-              </div>
+            <div className="mt-8 flex items-center gap-3 border-t pt-7" style={{ borderColor: '#1E2328' }}>
+              <div
+                className="h-4 w-4 animate-spin rounded-full border-2"
+                style={{ borderColor: '#2A3038', borderTopColor: '#C7A566' }}
+              />
+              <p className="text-[14px]" style={{ color: '#9BA1AA' }}>
+                Opening the Ad Library and loading the first results.
+              </p>
             </div>
           )}
 
           {error && (
-            <div className="mt-6 rounded-xl border border-red-900 bg-red-950/40 px-4 py-4 text-red-300">
+            <div
+              className="mt-8 rounded border px-4 py-3 text-[14px]"
+              style={{ borderColor: '#5C2E2E', backgroundColor: '#1A1010', color: '#E8A5A5' }}
+            >
               {error}
             </div>
           )}
         </section>
 
+        {/* Completion summary */}
         {completed && (
-          <section className="mt-8 rounded-2xl border border-emerald-900/50 bg-emerald-950/20 p-6">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  Scraping completed
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold">
-                  {businesses.length.toLocaleString()} unique
-                  businesses found
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={downloadCsv}
-                className="rounded-xl bg-white px-6 py-3 font-semibold text-slate-950 transition hover:bg-slate-200"
+          <section
+            className="mt-6 flex flex-col justify-between gap-4 rounded-md border px-8 py-6 sm:flex-row sm:items-center"
+            style={{ borderColor: '#233024', backgroundColor: '#0F1610' }}
+          >
+            <div>
+              <p className="text-[13px]" style={{ color: '#7FA88A' }}>
+                Scrape complete
+              </p>
+              <p
+                className="mt-1 text-[22px]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: '#F5F5F3' }}
               >
-                Download CSV
-              </button>
-            </div>
-          </section>
-        )}
-
-        {businesses.length > 0 && (
-          <section className="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-            <div className="border-b border-slate-800 px-6 py-5">
-              <h2 className="text-xl font-semibold">
-                Scraped Businesses
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Showing {businesses.length.toLocaleString()}{' '}
-                unique Facebook pages.
+                {businesses.length.toLocaleString()} unique businesses
               </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="border-b border-slate-800 bg-slate-950">
-                  <tr>
-                    <th className="px-6 py-4 text-sm font-medium text-slate-400">
-                      #
-                    </th>
+            <button
+              type="button"
+              onClick={downloadCsv}
+              className="rounded border px-6 py-3 text-[14px] font-medium transition"
+              style={{ borderColor: '#2A3038', backgroundColor: 'transparent', color: '#EDEEF0' }}
+            >
+              Download CSV
+            </button>
+          </section>
+        )}
 
-                    <th className="px-6 py-4 text-sm font-medium text-slate-400">
-                      Business Name
-                    </th>
+        {/* Results ledger */}
+        {businesses.length > 0 && (
+          <section className="mt-10">
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2
+                className="text-[20px]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: '#F5F5F3' }}
+              >
+                Businesses found
+              </h2>
+              <p className="text-[13px]" style={{ color: '#6E747C' }}>
+                {businesses.length.toLocaleString()} rows
+              </p>
+            </div>
 
-                    <th className="px-6 py-4 text-sm font-medium text-slate-400">
-                      Facebook Page
+            <div className="overflow-x-auto rounded-md border" style={{ borderColor: '#1E2328' }}>
+              <table className="w-full text-left" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1E2328' }}>
+                    <th
+                      className="px-5 py-3 text-[12px] font-medium"
+                      style={{ color: '#6E747C', width: '56px' }}
+                    >
+                      No.
+                    </th>
+                    <th className="px-5 py-3 text-[12px] font-medium" style={{ color: '#6E747C' }}>
+                      Business name
+                    </th>
+                    <th className="px-5 py-3 text-[12px] font-medium" style={{ color: '#6E747C' }}>
+                      Facebook page
                     </th>
                   </tr>
                 </thead>
@@ -384,24 +428,26 @@ export default function Home() {
                   {businesses.map((business, index) => (
                     <tr
                       key={business.facebookUrl}
-                      className="border-b border-slate-800 last:border-0"
+                      style={{ borderBottom: '1px solid #171B20' }}
                     >
-                      <td className="px-6 py-4 text-sm text-slate-500">
+                      <td
+                        className="px-5 py-3 text-[13px]"
+                        style={{ color: '#6E747C', fontVariantNumeric: 'tabular-nums' }}
+                      >
                         {index + 1}
                       </td>
 
-                      <td className="px-6 py-4 font-medium text-white">
+                      <td className="px-5 py-3 text-[14px]" style={{ color: '#EDEEF0' }}>
                         {business.name}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-3 text-[13px]">
                         <a
-                          href={
-                            business.facebookUrl
-                          }
+                          href={business.facebookUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-slate-400 underline decoration-slate-700 underline-offset-4 hover:text-white"
+                          className="underline decoration-[#2A3038] underline-offset-4 transition hover:decoration-current"
+                          style={{ color: '#9BA1AA' }}
                         >
                           {business.facebookUrl}
                         </a>
