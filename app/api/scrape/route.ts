@@ -7,6 +7,14 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Vercel's default function timeout is 10s (Hobby) / 60s (Pro). A scrape of
+// a few hundred businesses can easily take longer than that. This raises
+// the ceiling as far as your plan allows — 60 on Hobby, up to 800 with
+// Fluid Compute on Pro. Set this to match your actual Vercel plan; if it's
+// higher than your plan permits, Vercel will just cap it and log a warning
+// at deploy time rather than fail the build.
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
     const body = await request.json();
 
